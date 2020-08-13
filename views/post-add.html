@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>Add new post &laquo; Admin</title>
+  <link rel="stylesheet" href="/public/vendors/bootstrap/css/bootstrap.css">
+  <link rel="stylesheet" href="/public/vendors/font-awesome/css/font-awesome.css">
+  <link rel="stylesheet" href="/public/vendors/nprogress/nprogress.css">
+  <link rel="stylesheet" href="/public/css/admin.css">
+  <script src="/public/vendors/nprogress/nprogress.js"></script>
+</head>
+<body>
+  <script>NProgress.start()</script>
+
+  <div class="main">
+      {{ include "./navbar.html" }}
+    <div class="container-fluid">
+      <div class="page-title">
+        <h1>写文章</h1>
+      </div>
+      <!-- 有错误信息时展示 -->
+      <!-- <div class="alert alert-danger">
+        <strong>错误！</strong>发生XXX错误
+      </div> -->
+      <form  class="row" onsubmit="return false;">
+        <div class="col-md-9">
+          <div class="form-group">
+            <label for="title">标题</label>
+            <input id="title" class="form-control input-lg" name="title" type="text" placeholder="文章标题">
+          </div>
+          <div class="form-group">
+            <label for="content">标题</label>
+            <textarea id="content" class="form-control input-lg" name="content" cols="30" rows="10" placeholder="内容"></textarea>
+          </div>
+        </div>
+        <div class="col-md-3">
+          <div class="form-group">
+            <label for="feature">特色图像</label>
+            <!-- show when image chose -->
+            <img class="help-block thumbnail" style="display: none">
+            <input id="feature" class="form-control"  type="file">
+            <!-- 用于保存上传成功后的文件的路径 -->
+            <input type="hidden" value="" name="feature">
+          </div>
+          <div class="form-group">
+            <label for="category">所属分类</label>
+            <select id="category" class="form-control" name="category">
+              {{each catData}}
+              <option value="{{$value.cat_id}}">{{$value.cat_name}}</option>
+              {{/each}}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="created">发布时间</label>
+            <input id="created" class="form-control" name="created" type="text">
+          </div>
+          <div class="form-group">
+            <label for="status">状态</label>
+            <select id="status" class="form-control" name="status">
+                {{each status}}
+                <option value="{{$value.key}}">{{$value.text}}</option>
+                {{/each}}
+            </select>
+          </div>
+          <div class="form-group">
+            <button id="savePost" class="btn btn-primary" type="submit">保存</button>
+            <!-- <button class="btn btn-primary" type="button">保存</button> -->
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  {{ include "./aside.html" }}
+
+  <script src="/public/vendors/jquery/jquery.js"></script>
+  <script src="/public/vendors/bootstrap/js/bootstrap.js"></script>
+  <script src="/public/vendors/layer/layer.js"></script>
+  <script src="/public/vendors/laydate/laydate.js"></script>
+  <script>NProgress.done()</script>
+  <script>
+    
+    $(function(){
+      // 初始化时间
+      laydate.render({
+        elem: '#created', //指定元素
+        type: "datetime"
+      });
+
+      // ajax实现文章的添加
+      $("#savePost").click(function(){
+        var formData = $("form").serialize(); // title=1&content=11111
+        var _self = $(this);
+        _self.prop('disabled',true).html('保存中...'); //禁用
+        $.post('/savePost',formData,function(res){
+          var {code,message} = res;
+          if(code == 200){
+            layer.msg(message,{icon:1})
+            location.href = "/"
+          }else{
+            _self.prop('disabled',false).html('保存'); //禁用
+            layer.msg(message,{icon:1})
+          }
+        })
+      })
+      
+
+      // ajax上传文件
+      $("#feature").change(function(){
+        // 要通过FormData获取文件的二进制数据（文件DOM对象.files[0]）
+        if(this.files.length == 0){
+          return;
+        }
+        var file = this.files[0];
+        //把文件二进制数据设置到FormDate对象中
+        var formData = new FormData();
+        // 追加数据
+        formData.append('feature',file);
+        $.ajax({
+          url: "/uploadFeature",
+          data: formData,
+          type: 'post',
+          processData: false, // 将数据转换成对象，不对数据做处理，故 processData: false 
+　　　　   contentType: false,    // 不设置数据类型
+        }).then(res => {
+           // 回显图片
+            $(".thumbnail").attr('src','/'+res.fullPath).show();
+            // 把图片的原路径设置隐藏域显示在表单中，方便序列化带到后台去存储
+            $("input[name='feature']").val(res.fullPath);
+        })
+
+      })
+   
+   
+    })
+  </script>
+</body>
+</html>
